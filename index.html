@@ -774,10 +774,10 @@ function renderKanban(){const cols={pendiente:[],despachado:[],cancelado:[]};ped
 async function kanbanMover(id,nuevoEstado){const res=await apiFetch(`/pedidos/${id}/estado`,{method:"PUT",body:JSON.stringify({estado:nuevoEstado})});if(res.error){showToast(res.error,"error");return;}showToast(`Pedido movido a ${nuevoEstado} ✅`);const data=await apiFetch("/pedidos/");pedidos=Array.isArray(data)?data:[];renderKanban();adminTab("kanban");}
 
 async function init(){
+  setTimeout(()=>ocultarLoader(), 1200);
   try { await cargarProductos(); } catch(e) { console.error("Error cargando productos:",e); }
   actualizarCarrito();
   renderHeaderUser();
-  ocultarLoader();
 }
 init();
 </script>
