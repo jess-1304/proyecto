@@ -243,6 +243,20 @@ textarea{resize:vertical;min-height:70px;}
 .v-bar-amt{font-size:.8rem;color:var(--mid);width:90px;text-align:right;flex-shrink:0;}
 .alerta-banner{background:#FFF8E1;border:1px solid var(--yellow);border-radius:4px;padding:12px 16px;margin-bottom:20px;font-size:.85rem;color:var(--yellow);display:none;}
 .alerta-banner.show{display:block;}
+  /* ── KANBAN ── */
+.kanban-board{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;align-items:start;}
+.kanban-col{background:var(--white);border-radius:4px;box-shadow:var(--shadow);overflow:hidden;}
+.kanban-col-header{padding:14px 18px;font-weight:600;font-size:.88rem;letter-spacing:.06em;}
+.kanban-col-header.pendiente{background:var(--yellow-lt);color:var(--yellow);}
+.kanban-col-header.despachado{background:var(--green-lt);color:var(--green);}
+.kanban-col-header.cancelado{background:var(--red-lt);color:var(--red);}
+.kanban-cards{padding:12px;min-height:120px;display:flex;flex-direction:column;gap:10px;}
+.kanban-card{background:var(--cream);border-radius:4px;padding:14px;border-left:3px solid var(--gold);box-shadow:0 2px 8px rgba(26,22,18,.06);}
+.kanban-card-num{font-weight:600;font-size:.82rem;color:var(--dark);}
+.kanban-card-cliente{font-size:.78rem;color:var(--muted);margin:3px 0;}
+.kanban-card-total{font-family:'Cormorant Garamond',serif;font-size:1.1rem;color:var(--gold);font-weight:600;}
+.kanban-card-actions{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
+.kanban-empty{text-align:center;color:var(--muted);padding:24px;font-size:.85rem;}
 @media(max-width:768px){.client-layout,.admin-layout{grid-template-columns:1fr;}.client-sidebar,.admin-sidebar{display:none;}.perfil-grid{grid-template-columns:1fr;}}
 @media print{body>*:not(.modal-overlay){display:none!important;}.modal-overlay{position:static;background:none;padding:0;display:block!important;opacity:1!important;}.modal{max-height:none;box-shadow:none;}.print-btn,.close-btn{display:none!important;}}
 </style>
@@ -351,6 +365,7 @@ textarea{resize:vertical;min-height:70px;}
         <li><a onclick="adminTab('despachados')" id="an-despachados">✅ Despachados</a></li>
         <li><a onclick="adminTab('clientes')" id="an-clientes">👥 Top Clientes</a></li>
         <li><a onclick="adminTab('inventario')" id="an-inventario">📦 Inventario</a></li>
+        <li><a onclick="adminTab('kanban')" id="an-kanban">🗂️ Kanban</a></li>
         <li><a onclick="adminTab('equipo')" id="an-equipo">🌟 Equipo</a></li>
         <li><a onclick="logout()" class="danger">→ Cerrar Sesión</a></li>
       </ul>
@@ -405,6 +420,24 @@ textarea{resize:vertical;min-height:70px;}
           <table class="table-admin"><thead><tr><th>Tipo</th><th>Producto</th><th>Cantidad</th><th>Usuario</th><th>Fecha</th></tr></thead><tbody id="tbInventario"></tbody></table>
         </div>
       </div>
+      <div class="admin-tab-content" id="at-kanban">
+  <div class="page-title">Tablero Kanban</div>
+  <div class="page-sub">Gestión visual de pedidos por estado</div>
+  <div class="kanban-board" id="kanbanBoard">
+    <div class="kanban-col" id="col-pendiente">
+      <div class="kanban-col-header pendiente">🟡 Pendiente</div>
+      <div class="kanban-cards" id="cards-pendiente"></div>
+    </div>
+    <div class="kanban-col" id="col-despachado">
+      <div class="kanban-col-header despachado">✅ Despachado</div>
+      <div class="kanban-cards" id="cards-despachado"></div>
+    </div>
+    <div class="kanban-col" id="col-cancelado">
+      <div class="kanban-col-header cancelado">❌ Cancelado</div>
+      <div class="kanban-cards" id="cards-cancelado"></div>
+    </div>
+  </div>
+</div>
       <div class="admin-tab-content" id="at-equipo">
         <div class="page-title">Nuestro Equipo</div>
         <div class="page-sub">Las personas detrás de Glamour Bisutería</div>
