@@ -1041,7 +1041,8 @@ async function kanbanMover(id, nuevoEstado){
   });
   if(res.error){showToast(res.error,"error");return;}
   showToast(`Pedido movido a ${nuevoEstado} ✅`);
-  await cargarAdmin();
+const data = await apiFetch("/pedidos/");
+  pedidos = Array.isArray(data) ? data : [];
   renderKanban();
   adminTab("kanban");
 }
