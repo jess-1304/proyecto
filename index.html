@@ -730,7 +730,7 @@ function renderProductos(lista){
     const agotado=p.stock===0;
     const stockBadge=agotado?`<span class="badge-stock badge-low">Agotado</span>`:p.stock<=5?`<span class="badge-stock badge-low">¡Últimas ${p.stock}!</span>`:`<span class="badge-stock">${p.stock} disp.</span>`;
     const btnLabel=agotado?"Agotado":enC?`En carrito (${enC.cantidad})`:"+Agregar";
-    return`<div class="card"><div class="card-img">${p.emoji||emojiProd(p.nombre)}${stockBadge}</div><div class="card-body"><div class="card-cat">${p.categoria||""}</div><div class="card-name">${p.nombre}</div><div class="card-code">${p.codigo||""}</div><div class="card-footer"><span class="price">${fmt(p.precio)}</span><button class="add-btn" onclick="agregarAlCarrito('${p.id}')" ${agotado?"disabled":""}>${btnLabel}</button></div></div></div>`;
+    const imgContent = p.imagen_url   ? `<img src="${p.imagen_url}" alt="${p.nombre}" style="width:100%;height:100%;object-fit:cover;"/>`   : (p.emoji || emojiProd(p.nombre));  return`<div class="card"><div class="card-img">${imgContent}${stockBadge}</div><div class="card-body"><div class="card-cat">${p.categoria||""}</div><div class="card-name">${p.nombre}</div><div class="card-code">${p.codigo||""}</div><div class="card-footer"><span class="price">${fmt(p.precio)}</span><button class="add-btn" onclick="agregarAlCarrito('${p.id}')" ${agotado?"disabled":""}>${btnLabel}</button></div></div></div>`;
   }).join("");
 }
 
