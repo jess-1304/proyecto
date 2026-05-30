@@ -977,6 +977,7 @@ function adminTab(tab){
   document.getElementById("at-"+tab).classList.add("active");
   document.querySelectorAll(".admin-nav li a").forEach(a=>a.classList.remove("active"));
   document.getElementById("an-"+tab).classList.add("active");
+  if(tab === "kanban") renderKanban();
 }
 
 function openEditProd(id,nombre,precio,stock,desc){
@@ -1001,6 +1002,48 @@ async function guardarProducto(){
   await renderAdminProductos();
   await cargarProductos();
   showToast("Producto actualizado ✦");
+}
+  /* ══════════════════════════════════════
+   KANBAN
+══════════════════════════════════════ */
+function renderKanban(){
+  const cols = { pendiente:[], despachado:[], cancelado:[] };
+  pedidos.forEach(p => { if(cols[p.estado]) cols[p.estado].push(p); });
+
+  Object.entries(cols).forEach(([estado, lista]) => {
+    const container = document.getElementById(`cards-${estado}`);
+    if(!container) return;
+    if(!lista.length){
+      container.innerHTML=`<div class="kanban-empty">Sin pedidos</div>`;
+      return;
+    }
+    container.innerHTML = lista.map(p => {
+      const acciones = estado === "pendiente"
+        ? `<button class="action-btn" onclick="kanbanMover('${p._id}','despachado')">✅ Despachar</button>
+           <button class="action-btn danger" onclick="kanbanMover('${p._id}','cancelado')">✕ Cancelar</button>`
+        : estado === "despachado"
+        ? `<button class="action-btn danger" onclick="kanbanMover('${p._id}','cancelado')">✕ Cancelar</button>`
+        : "";
+      return `<div class="kanban-card">
+        <div class="kanban-card-num">${p.numero_factura||"—"}</div>
+        <div class="kanban-card-cliente">👤 ${p.cliente_nombre||"—"}</div>
+        <div class="kanban-card-cliente">📅 ${fmtFecha(p.fecha)}</div>
+        <div class="kanban-card-total">${fmt(p.total)}</div>
+        ${acciones ? `<div class="kanban-card-actions">${acciones}</div>` : ""}
+      </div>`;
+    }).join("");
+  });
+}
+
+async function kanbanMover(id, nuevoEstado){
+  const res = await apiFetch(`/pedidos/${id}/estado`, {
+    method:"PUT", body: JSON.stringify({estado: nuevoEstado})
+  });
+  if(res.error){showToast(res.error,"error");return;}
+  showToast(`Pedido movido a ${nuevoEstado} ✅`);
+  await cargarAdmin();
+  renderKanban();
+  adminTab("kanban");
 }
 
 /* ══════════════════════════════════════
