@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Glamour Bisutería</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root{
   --gold:#C9A84C;--gold-lt:#E8D5A3;--gold-dk:#9A7A2E;
@@ -243,7 +244,6 @@ textarea{resize:vertical;min-height:70px;}
 .v-bar-amt{font-size:.8rem;color:var(--mid);width:90px;text-align:right;flex-shrink:0;}
 .alerta-banner{background:#FFF8E1;border:1px solid var(--yellow);border-radius:4px;padding:12px 16px;margin-bottom:20px;font-size:.85rem;color:var(--yellow);display:none;}
 .alerta-banner.show{display:block;}
-  /* ── KANBAN ── */
 .kanban-board{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;align-items:start;}
 .kanban-col{background:var(--white);border-radius:4px;box-shadow:var(--shadow);overflow:hidden;}
 .kanban-col-header{padding:14px 18px;font-weight:600;font-size:.88rem;letter-spacing:.06em;}
@@ -376,6 +376,53 @@ textarea{resize:vertical;min-height:70px;}
         <div class="page-sub">Resumen general del negocio</div>
         <div class="alerta-banner" id="alertaBanner"></div>
         <div class="stat-row" id="adminStatRow"></div>
+
+        <!-- ══ BURNDOWN CHART ══ -->
+        <div style="background:var(--dark);border:1px solid rgba(201,168,76,.2);border-radius:6px;padding:24px 28px;margin-bottom:24px;position:relative;overflow:hidden;">
+          <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);"></div>
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+            <div>
+              <div style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);font-family:'Courier New',monospace;margin-bottom:4px;">◆ Análisis Semanal</div>
+              <div style="font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:#FAF7F2;font-weight:400;">Pedidos Pendientes</div>
+              <div style="font-size:11px;color:rgba(250,247,242,0.4);margin-top:2px;" id="burndownWeekRange">Cargando...</div>
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+              <div style="background:#1A1612;border:1px solid rgba(201,168,76,.2);border-radius:6px;padding:8px 14px;text-align:center;min-width:70px;">
+                <span style="font-size:18px;font-weight:700;color:#E74C3C;display:block;line-height:1;" id="kpiPendientes">—</span>
+                <span style="font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:rgba(250,247,242,0.4);font-family:'Courier New',monospace;margin-top:3px;display:block;">Pendientes</span>
+              </div>
+              <div style="background:#1A1612;border:1px solid rgba(201,168,76,.2);border-radius:6px;padding:8px 14px;text-align:center;min-width:70px;">
+                <span style="font-size:18px;font-weight:700;color:var(--gold);display:block;line-height:1;" id="kpiPico">—</span>
+                <span style="font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:rgba(250,247,242,0.4);font-family:'Courier New',monospace;margin-top:3px;display:block;">Pico del día</span>
+              </div>
+              <div style="background:#1A1612;border:1px solid rgba(201,168,76,.2);border-radius:6px;padding:8px 14px;text-align:center;min-width:70px;">
+                <span style="font-size:18px;font-weight:700;color:#2E7D32;display:block;line-height:1;" id="kpiTasa">—</span>
+                <span style="font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:rgba(250,247,242,0.4);font-family:'Courier New',monospace;margin-top:3px;display:block;">Resueltos %</span>
+              </div>
+            </div>
+          </div>
+          <div style="position:relative;height:240px;">
+            <div id="burndownLoading" style="height:240px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;">
+              <div style="width:24px;height:24px;border:2px solid rgba(201,168,76,.2);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;"></div>
+              <span style="font-size:11px;color:rgba(250,247,242,0.3);font-family:'Courier New',monospace;letter-spacing:1px;">Cargando datos...</span>
+            </div>
+            <canvas id="burndownChart" style="display:none;"></canvas>
+          </div>
+          <div style="display:flex;gap:20px;margin-top:14px;flex-wrap:wrap;">
+            <div style="display:flex;align-items:center;gap:7px;font-size:11px;color:rgba(250,247,242,0.45);font-family:'Courier New',monospace;">
+              <span style="width:10px;height:10px;border-radius:50%;background:var(--gold);flex-shrink:0;display:inline-block;"></span> Pendientes
+            </div>
+            <div style="display:flex;align-items:center;gap:7px;font-size:11px;color:rgba(250,247,242,0.45);font-family:'Courier New',monospace;">
+              <span style="width:10px;height:10px;border-radius:50%;background:rgba(250,247,242,0.25);flex-shrink:0;display:inline-block;"></span> Total pedidos
+            </div>
+            <div style="display:flex;align-items:center;gap:7px;font-size:11px;color:rgba(250,247,242,0.45);font-family:'Courier New',monospace;">
+              <span style="width:10px;height:10px;border-radius:50%;background:rgba(201,168,76,.35);flex-shrink:0;display:inline-block;border:1px dashed var(--gold);"></span> Línea ideal
+            </div>
+          </div>
+          <div style="font-family:'Courier New',monospace;font-size:10px;letter-spacing:2px;color:var(--gold);text-transform:uppercase;margin-top:6px;opacity:.6;" id="burndownTodayLabel"></div>
+        </div>
+        <!-- ══ FIN BURNDOWN ══ -->
+
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
           <div class="admin-table-wrap">
             <div class="admin-table-head"><h3>Pedidos Recientes</h3></div>
@@ -421,23 +468,23 @@ textarea{resize:vertical;min-height:70px;}
         </div>
       </div>
       <div class="admin-tab-content" id="at-kanban">
-  <div class="page-title">Tablero Kanban</div>
-  <div class="page-sub">Gestión visual de pedidos por estado</div>
-  <div class="kanban-board" id="kanbanBoard">
-    <div class="kanban-col" id="col-pendiente">
-      <div class="kanban-col-header pendiente">🟡 Pendiente</div>
-      <div class="kanban-cards" id="cards-pendiente"></div>
-    </div>
-    <div class="kanban-col" id="col-despachado">
-      <div class="kanban-col-header despachado">✅ Despachado</div>
-      <div class="kanban-cards" id="cards-despachado"></div>
-    </div>
-    <div class="kanban-col" id="col-cancelado">
-      <div class="kanban-col-header cancelado">❌ Cancelado</div>
-      <div class="kanban-cards" id="cards-cancelado"></div>
-    </div>
-  </div>
-</div>
+        <div class="page-title">Tablero Kanban</div>
+        <div class="page-sub">Gestión visual de pedidos por estado</div>
+        <div class="kanban-board" id="kanbanBoard">
+          <div class="kanban-col" id="col-pendiente">
+            <div class="kanban-col-header pendiente">🟡 Pendiente</div>
+            <div class="kanban-cards" id="cards-pendiente"></div>
+          </div>
+          <div class="kanban-col" id="col-despachado">
+            <div class="kanban-col-header despachado">✅ Despachado</div>
+            <div class="kanban-cards" id="cards-despachado"></div>
+          </div>
+          <div class="kanban-col" id="col-cancelado">
+            <div class="kanban-col-header cancelado">❌ Cancelado</div>
+            <div class="kanban-cards" id="cards-cancelado"></div>
+          </div>
+        </div>
+      </div>
       <div class="admin-tab-content" id="at-equipo">
         <div class="page-title">Nuestro Equipo</div>
         <div class="page-sub">Las personas detrás de Glamour Bisutería</div>
@@ -478,7 +525,6 @@ textarea{resize:vertical;min-height:70px;}
     </div>
   </div>
 </div>
-
 <div class="modal-overlay" id="checkoutModal">
   <div class="modal">
     <div class="modal-head"><h2>Datos del Pedido</h2><button class="close-btn" style="color:var(--mid)" onclick="closeCheckout()">✕</button></div>
@@ -496,14 +542,12 @@ textarea{resize:vertical;min-height:70px;}
     </div>
   </div>
 </div>
-
 <div class="modal-overlay" id="invoiceModal">
   <div class="modal">
     <div style="display:flex;justify-content:flex-end;padding:12px 16px 0"><button class="close-btn" style="color:var(--mid)" onclick="closeInvoice()">✕</button></div>
     <div id="invoiceContent"></div>
   </div>
 </div>
-
 <div class="modal-overlay" id="editProdModal">
   <div class="modal" style="max-width:420px">
     <div class="modal-head"><h2>Editar Producto</h2><button class="close-btn" style="color:var(--mid)" onclick="closeEditProd()">✕</button></div>
@@ -519,7 +563,6 @@ textarea{resize:vertical;min-height:70px;}
     </div>
   </div>
 </div>
-
 <div class="cart-overlay" id="cartOverlay" onclick="toggleCart()"></div>
 <div class="cart-panel" id="cartPanel">
   <div class="cart-header"><h2>🛒 Tu Carrito</h2><button class="close-btn" onclick="toggleCart()">✕</button></div>
@@ -531,51 +574,27 @@ textarea{resize:vertical;min-height:70px;}
 </div>
 
 <script>
-/* ══════════════════════════════════════
-   API CONFIG
-══════════════════════════════════════ */
 const API = "https://glamour-backend-6bug.onrender.com/api";
-
 async function apiFetch(endpoint, options = {}) {
   const token = localStorage.getItem("token");
   try {
     const res = await fetch(`${API}${endpoint}`, {
-      headers: {
-        "Content-Type": "application/json",
-        ...(token ? { "Authorization": `Bearer ${token}` } : {})
-      },
+      headers: {"Content-Type":"application/json",...(token?{"Authorization":`Bearer ${token}`}:{})},
       ...options
     });
     return await res.json();
-  } catch (e) {
-    console.error("API error:", e);
-    return { error: "Error de conexión con el servidor" };
-  }
+  } catch (e) { console.error("API error:",e); return {error:"Error de conexión con el servidor"}; }
 }
 
-/* ══════════════════════════════════════
-   ESTADO GLOBAL
-══════════════════════════════════════ */
-let currentUser  = null;
-let carrito      = [];
-let productos    = [];
-let pedidos      = [];
-let catActual    = "Todos";
-let searchTimer  = null;
-let dropdownOpen = false;
-let productosFiltrados = [];
-
-const EQUIPO = [
-  {nombre:"Jesús González",    rol:"Backend Developer",  inicial:"JG", badge:"Dev BE"},
-  {nombre:"Marlón Gélvez",     rol:"Frontend Developer", inicial:"MG", badge:"Dev FE"},
-  {nombre:"Sebastián Velandia",rol:"Product Owner",      inicial:"SV", badge:"PO"},
-  {nombre:"Glamour Bisutería", rol:"Cliente & Marca",    inicial:"GB", badge:"Brand"},
+let currentUser=null,carrito=[],productos=[],pedidos=[],catActual="Todos",searchTimer=null,dropdownOpen=false,productosFiltrados=[];
+const EQUIPO=[
+  {nombre:"Jesús González",rol:"Backend Developer",inicial:"JG",badge:"Dev BE"},
+  {nombre:"Marlón Gélvez",rol:"Frontend Developer",inicial:"MG",badge:"Dev FE"},
+  {nombre:"Sebastián Velandia",rol:"Product Owner",inicial:"SV",badge:"PO"},
+  {nombre:"Glamour Bisutería",rol:"Cliente & Marca",inicial:"GB",badge:"Brand"},
 ];
 
-/* ══════════════════════════════════════
-   UTILIDADES
-══════════════════════════════════════ */
-const fmt = n => new Intl.NumberFormat("es-CO",{style:"currency",currency:"COP",minimumFractionDigits:0}).format(n);
+const fmt=n=>new Intl.NumberFormat("es-CO",{style:"currency",currency:"COP",minimumFractionDigits:0}).format(n);
 function showToast(msg,type="ok"){const el=document.getElementById("toast");el.textContent=msg;el.className="toast show"+(type==="error"?" error":"");clearTimeout(window._tt);window._tt=setTimeout(()=>el.className="toast",3200);}
 function showErr(id,msg){const el=document.getElementById(id);if(!el)return;el.textContent="⚠️ "+msg;el.classList.add("show");}
 function hideErr(id){const el=document.getElementById(id);if(el)el.classList.remove("show");}
@@ -583,16 +602,8 @@ function showOk(id,msg){const el=document.getElementById(id);if(!el)return;el.te
 function initials(n){return(n||"?").split(" ").slice(0,2).map(w=>w[0]||"").join("").toUpperCase();}
 function emojiProd(n){const s=(n||"").toLowerCase();if(s.includes("collar")||s.includes("cadena")||s.includes("choker"))return"📿";if(s.includes("aret")||s.includes("chandelier"))return"💎";if(s.includes("pulsera")||s.includes("tobillera"))return"💍";if(s.includes("anillo"))return"💍";if(s.includes("dije"))return"✨";if(s.includes("set"))return"🎁";return"✦";}
 function fmtFecha(f){if(!f)return"—";return new Date(f).toLocaleDateString("es-CO");}
+function goTo(view){document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));document.getElementById("view"+view.charAt(0).toUpperCase()+view.slice(1)).classList.add("active");window.scrollTo(0,0);}
 
-function goTo(view){
-  document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
-  document.getElementById("view"+view.charAt(0).toUpperCase()+view.slice(1)).classList.add("active");
-  window.scrollTo(0,0);
-}
-
-/* ══════════════════════════════════════
-   AUTH — conectado al backend
-══════════════════════════════════════ */
 function openAuthModal(){closeDropdown();switchAuthTab("login");hideErr("loginError");hideErr("registerError");document.getElementById("authModal").classList.add("open");}
 function closeAuthModal(){document.getElementById("authModal").classList.remove("open");}
 function switchAuthTab(tab){
@@ -601,68 +612,42 @@ function switchAuthTab(tab){
   document.getElementById("sectionLogin").classList.toggle("active",tab==="login");
   document.getElementById("sectionRegister").classList.toggle("active",tab==="register");
 }
-
 async function doLogin(){
   hideErr("loginError");
-  const email    = document.getElementById("loginEmail").value.trim();
-  const password = document.getElementById("loginPass").value;
+  const email=document.getElementById("loginEmail").value.trim();
+  const password=document.getElementById("loginPass").value;
   if(!email||!password){showErr("loginError","Completa email y contraseña.");return;}
-  const btn = document.getElementById("loginBtn");
-  btn.disabled = true; btn.textContent = "Entrando…";
-  const res = await apiFetch("/auth/login", {
-    method:"POST", body: JSON.stringify({email, password})
-  });
-  btn.disabled = false; btn.textContent = "ENTRAR";
-  if(res.error){showErr("loginError", res.error);return;}
-  localStorage.setItem("token", res.token);
-  currentUser = { nombre: res.nombre, rol: res.rol, email };
-  document.getElementById("loginEmail").value = "";
-  document.getElementById("loginPass").value  = "";
-  closeAuthModal();
-  renderHeaderUser();
+  const btn=document.getElementById("loginBtn");
+  btn.disabled=true;btn.textContent="Entrando…";
+  const res=await apiFetch("/auth/login",{method:"POST",body:JSON.stringify({email,password})});
+  btn.disabled=false;btn.textContent="ENTRAR";
+  if(res.error){showErr("loginError",res.error);return;}
+  localStorage.setItem("token",res.token);
+  currentUser={nombre:res.nombre,rol:res.rol,email};
+  document.getElementById("loginEmail").value="";
+  document.getElementById("loginPass").value="";
+  closeAuthModal();renderHeaderUser();
   showToast(`Bienvenido/a, ${res.nombre.split(" ")[0]} ✦`);
   if(res.rol==="admin"){await cargarAdmin();setTimeout(()=>goTo("admin"),400);}
   else{await cargarCliente();setTimeout(()=>goTo("cliente"),400);}
 }
-
 async function doRegister(){
-  hideErr("registerError"); hideErr("registerOk");
-  const nombre   = document.getElementById("rNombre").value.trim();
-  const email    = document.getElementById("rEmail").value.trim();
-  const password = document.getElementById("rPass").value;
+  hideErr("registerError");hideErr("registerOk");
+  const nombre=document.getElementById("rNombre").value.trim();
+  const email=document.getElementById("rEmail").value.trim();
+  const password=document.getElementById("rPass").value;
   if(!nombre||!email||!password){showErr("registerError","Nombre, email y contraseña son obligatorios.");return;}
   if(password.length<6){showErr("registerError","Contraseña mínimo 6 caracteres.");return;}
-  const btn = document.getElementById("registerBtn");
-  btn.disabled = true; btn.textContent = "Creando…";
-  const res = await apiFetch("/auth/registro", {
-    method:"POST", body: JSON.stringify({
-      nombre, email, password,
-      telefono:  document.getElementById("rTel").value.trim(),
-      documento: document.getElementById("rDoc").value.trim(),
-      direccion: document.getElementById("rDir").value.trim(),
-      rol: "cliente"
-    })
-  });
-  btn.disabled = false; btn.textContent = "CREAR MI CUENTA";
-  if(res.error){showErr("registerError", res.error);return;}
+  const btn=document.getElementById("registerBtn");
+  btn.disabled=true;btn.textContent="Creando…";
+  const res=await apiFetch("/auth/registro",{method:"POST",body:JSON.stringify({nombre,email,password,telefono:document.getElementById("rTel").value.trim(),documento:document.getElementById("rDoc").value.trim(),direccion:document.getElementById("rDir").value.trim(),rol:"cliente"})});
+  btn.disabled=false;btn.textContent="CREAR MI CUENTA";
+  if(res.error){showErr("registerError",res.error);return;}
   showOk("registerOk","¡Cuenta creada! Inicia sesión.");
   setTimeout(()=>switchAuthTab("login"),1500);
 }
+function logout(){closeDropdown();currentUser=null;localStorage.removeItem("token");productos=[];pedidos=[];renderHeaderUser();goTo("tienda");cargarProductos();showToast("Sesión cerrada ✦");}
 
-function logout(){
-  closeDropdown();
-  currentUser = null;
-  localStorage.removeItem("token");
-  productos = []; pedidos = [];
-  renderHeaderUser();
-  goTo("tienda");
-  cargarProductos();
-  showToast("Sesión cerrada ✦");
-}
-
-/* ══════════════════════════════════════
-   HEADER
-══════════════════════════════════════ */
 function renderHeaderUser(){
   const ids=["headerUserArea","headerUserAreaC","headerUserAreaA"];
   ids.forEach(id=>{
@@ -677,27 +662,18 @@ function openDropdown(){
   dropdownOpen=true;
   const dd=document.getElementById("userDropdown")||createDropdown();
   dd.style.display="block";
-  const goPanel=currentUser.rol==="admin"
-    ?`<button class="dd-item" onclick="closeDropdown();goTo('admin');cargarAdmin()">🛠 Panel Admin</button>`
-    :`<button class="dd-item" onclick="closeDropdown();goTo('cliente');cargarCliente()">📦 Mi Cuenta</button>`;
+  const goPanel=currentUser.rol==="admin"?`<button class="dd-item" onclick="closeDropdown();goTo('admin');cargarAdmin()">🛠 Panel Admin</button>`:`<button class="dd-item" onclick="closeDropdown();goTo('cliente');cargarCliente()">📦 Mi Cuenta</button>`;
   dd.innerHTML=`<div class="dd-head"><p>${currentUser.rol==="admin"?"ADMINISTRADOR":"CLIENTE"}</p><strong>${currentUser.nombre}</strong></div>${goPanel}<div class="dd-sep"></div><button class="dd-item danger" onclick="logout()">→ Cerrar sesión</button>`;
 }
 function createDropdown(){const d=document.createElement("div");d.id="userDropdown";d.className="user-dropdown";d.style.display="none";document.body.appendChild(d);return d;}
 function closeDropdown(){dropdownOpen=false;const dd=document.getElementById("userDropdown");if(dd)dd.style.display="none";}
 document.addEventListener("click",e=>{if(dropdownOpen&&!e.target.closest(".user-pill")&&!e.target.closest(".user-dropdown"))closeDropdown();});
 
-/* ══════════════════════════════════════
-   TIENDA — PRODUCTOS desde API
-══════════════════════════════════════ */
 async function cargarProductos(){
-  const data = await apiFetch("/productos/");
-  if(Array.isArray(data)){
-    productos = data.map(p=>({...p, id: p._id}));
-  }
-  renderCats();
-  aplicarFiltros();
+  const data=await apiFetch("/productos/");
+  if(Array.isArray(data)){productos=data.map(p=>({...p,id:p._id}));}
+  renderCats();aplicarFiltros();
 }
-
 function renderCats(){
   const cats=["Todos",...new Set(productos.map(p=>p.categoria).filter(Boolean))];
   const container=document.getElementById("catFilters");container.innerHTML="";
@@ -709,7 +685,6 @@ function renderCats(){
     container.appendChild(btn);
   });
 }
-
 function debounceSearch(){clearTimeout(searchTimer);searchTimer=setTimeout(aplicarFiltros,300);}
 function buscar(){clearTimeout(searchTimer);aplicarFiltros();}
 function aplicarFiltros(){
@@ -717,10 +692,8 @@ function aplicarFiltros(){
   let lista=productos;
   if(catActual!=="Todos")lista=lista.filter(p=>p.categoria===catActual);
   if(q)lista=lista.filter(p=>p.nombre.toLowerCase().includes(q)||(p.codigo||"").toLowerCase().includes(q));
-  productosFiltrados=lista;
-  renderProductos(lista);
+  productosFiltrados=lista;renderProductos(lista);
 }
-
 function renderProductos(lista){
   const grid=document.getElementById("productGrid");
   document.getElementById("prodCount").textContent=lista.length+" producto"+(lista.length!==1?"s":"");
@@ -734,9 +707,6 @@ function renderProductos(lista){
   }).join("");
 }
 
-/* ══════════════════════════════════════
-   CARRITO
-══════════════════════════════════════ */
 function agregarAlCarrito(id){
   const p=productos.find(x=>x.id===id);if(!p||p.stock===0)return;
   const ex=carrito.find(x=>x.producto.id===id);
@@ -763,9 +733,6 @@ function actualizarCarrito(){
 }
 function toggleCart(){document.getElementById("cartOverlay").classList.toggle("open");document.getElementById("cartPanel").classList.toggle("open");}
 
-/* ══════════════════════════════════════
-   CHECKOUT — conectado al backend
-══════════════════════════════════════ */
 function openCheckout(){
   if(!carrito.length){showToast("El carrito está vacío","error");return;}
   if(!currentUser){showToast("Inicia sesión para continuar","error");openAuthModal();return;}
@@ -777,42 +744,23 @@ function openCheckout(){
   document.getElementById("checkoutModal").classList.add("open");
 }
 function closeCheckout(){document.getElementById("checkoutModal").classList.remove("open");}
-
 async function enviarPedido(){
   hideErr("apiError");
   const nombre=document.getElementById("fNombre").value.trim();
   if(!nombre){showErr("apiError","Escribe tu nombre.");return;}
   const btn=document.getElementById("submitBtn");
   btn.disabled=true;btn.textContent="Procesando…";
-  const items=carrito.map(i=>({
-    producto_id:     i.producto.id,
-    cantidad:        i.cantidad,
-    precio_unitario: i.producto.precio
-  }));
-  const res=await apiFetch("/pedidos/",{
-    method:"POST",
-    body:JSON.stringify({
-      items,
-      notas: document.getElementById("fNotas").value,
-      descuento: 0
-    })
-  });
+  const items=carrito.map(i=>({producto_id:i.producto.id,cantidad:i.cantidad,precio_unitario:i.producto.precio}));
+  const res=await apiFetch("/pedidos/",{method:"POST",body:JSON.stringify({items,notas:document.getElementById("fNotas").value,descuento:0})});
   btn.disabled=false;btn.textContent="CONFIRMAR PEDIDO";
   if(res.error){showErr("apiError",res.error);return;}
   closeCheckout();
   const itemsCopy=[...carrito];
   carrito=[];actualizarCarrito();
   await cargarProductos();
-  mostrarFactura({
-    numero: res.numero_factura,
-    fecha:  new Date().toLocaleDateString("es-CO"),
-    cliente: nombre,
-    estado: "pendiente",
-    total: res.total
-  }, itemsCopy);
+  mostrarFactura({numero:res.numero_factura,fecha:new Date().toLocaleDateString("es-CO"),cliente:nombre,estado:"pendiente",total:res.total},itemsCopy);
   showToast("✅ Pedido registrado: "+res.numero_factura);
 }
-
 function mostrarFactura(pedido,items){
   const rows=items.map(i=>`<tr><td>${i.producto?i.producto.nombre:i.nombre}</td><td style="text-align:center">${i.cantidad||i.cant}</td><td style="text-align:right">${fmt(i.producto?i.producto.precio:i.precio)}</td><td style="text-align:right">${fmt((i.producto?i.producto.precio:i.precio)*(i.cantidad||i.cant))}</td></tr>`).join("");
   document.getElementById("invoiceContent").innerHTML=`<div class="inv-head"><div class="inv-brand">✦ Glamour Bisutería</div><div class="inv-sub">Bucaramanga, Santander · Colombia</div></div><div class="inv-body"><div class="inv-meta"><div class="inv-meta-box"><div class="lbl">FACTURA N°</div><div class="val">${pedido.numero}</div></div><div class="inv-meta-box"><div class="lbl">FECHA</div><div class="val">${pedido.fecha}</div></div><div class="inv-meta-box"><div class="lbl">CLIENTE</div><div class="val">${pedido.cliente}</div></div><div class="inv-meta-box"><div class="lbl">ESTADO</div><div class="val"><span class="status-pill sp-${pedido.estado}">${pedido.estado}</span></div></div></div><table class="inv-table"><thead><tr><th>PRODUCTO</th><th style="text-align:center">CANT</th><th style="text-align:right">PRECIO</th><th style="text-align:right">SUBTOTAL</th></tr></thead><tbody>${rows}</tbody></table><div class="inv-totals"><div class="grand"><span>TOTAL</span><span>${fmt(pedido.total)}</span></div></div></div><div class="inv-footer">¡Gracias por tu compra! · Tu pedido está siendo procesado.<br>Jesús González · Marlón Gélvez · Sebastián Velandia · Grupo 3</div><button class="print-btn" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>`;
@@ -820,9 +768,6 @@ function mostrarFactura(pedido,items){
 }
 function closeInvoice(){document.getElementById("invoiceModal").classList.remove("open");}
 
-/* ══════════════════════════════════════
-   VISTA CLIENTE — desde API
-══════════════════════════════════════ */
 async function cargarCliente(){
   if(!currentUser)return;
   document.getElementById("clientAvatarBig").textContent=initials(currentUser.nombre);
@@ -834,230 +779,24 @@ async function cargarCliente(){
   pedidos=Array.isArray(misPedidos)?misPedidos:[];
   const total=pedidos.reduce((s,p)=>s+(p.estado!=="cancelado"?p.total:0),0);
   const pendientes=pedidos.filter(p=>p.estado==="pendiente").length;
-  document.getElementById("clientSummaryCards").innerHTML=`
-    <div class="sum-card"><div class="sc-label">PEDIDOS TOTAL</div><div class="sc-value">${pedidos.length}</div></div>
-    <div class="sum-card"><div class="sc-label">GASTADO</div><div class="sc-value" style="font-size:1.4rem">${fmt(total)}</div></div>
-    <div class="sum-card"><div class="sc-label">PENDIENTES</div><div class="sc-value">${pendientes}</div><div class="sc-sub">por recibir</div></div>
-    <div class="sum-card"><div class="sc-label">DESPACHADOS</div><div class="sc-value">${pedidos.filter(p=>p.estado==="despachado").length}</div></div>`;
+  document.getElementById("clientSummaryCards").innerHTML=`<div class="sum-card"><div class="sc-label">PEDIDOS TOTAL</div><div class="sc-value">${pedidos.length}</div></div><div class="sum-card"><div class="sc-label">GASTADO</div><div class="sc-value" style="font-size:1.4rem">${fmt(total)}</div></div><div class="sum-card"><div class="sc-label">PENDIENTES</div><div class="sc-value">${pendientes}</div><div class="sc-sub">por recibir</div></div><div class="sum-card"><div class="sc-label">DESPACHADOS</div><div class="sc-value">${pedidos.filter(p=>p.estado==="despachado").length}</div></div>`;
   const ultimo=pedidos[0];
   document.getElementById("clientLastOrder").innerHTML=ultimo?`<div class="pedido-card" style="display:block"><div class="pedido-num">${ultimo.numero_factura}</div><div class="pedido-fecha">${fmtFecha(ultimo.fecha)}</div><div class="pedido-items">${(ultimo.items||[]).map(i=>`${i.nombre} × ${i.cantidad}`).join(" · ")}</div><div style="display:flex;justify-content:space-between;align-items:center"><span class="pedido-total">${fmt(ultimo.total)}</span><span class="status-pill sp-${ultimo.estado}">${ultimo.estado}</span></div></div>`:`<div style="color:var(--muted);text-align:center;padding:24px">Sin pedidos aún</div>`;
   document.getElementById("clientPedidosList").innerHTML=pedidos.length?pedidos.map(p=>`<div class="pedido-card"><div><div class="pedido-num">${p.numero_factura}</div><div class="pedido-fecha">${fmtFecha(p.fecha)}</div><div class="pedido-items">${(p.items||[]).map(i=>`${i.nombre} × ${i.cantidad}`).join("<br>")}</div><div class="pedido-total">${fmt(p.total)}</div>${p.estado==="pendiente"?`<button class="btn-sm btn-cancel" onclick="cancelarPedidoCliente('${p._id}')">✕ Cancelar pedido</button>`:""}</div><span class="status-pill sp-${p.estado}">${p.estado}</span></div>`).join(""):`<div style="text-align:center;padding:40px;color:var(--muted)"><div style="font-size:3rem">📦</div><p style="margin-top:12px">Aún no tienes pedidos</p></div>`;
 }
-
 function clientTab(tab){
   document.querySelectorAll(".client-tab-content").forEach(el=>el.classList.remove("active"));
   document.getElementById("ct-"+tab).classList.add("active");
   document.querySelectorAll(".sidebar-nav li a").forEach(a=>a.classList.remove("active"));
   document.getElementById("sn-"+tab).classList.add("active");
 }
-
 async function cancelarPedidoCliente(id){
   if(!confirm("¿Cancelar este pedido?"))return;
   const res=await apiFetch(`/pedidos/${id}/estado`,{method:"PUT",body:JSON.stringify({estado:"cancelado"})});
   if(res.error){showToast(res.error,"error");return;}
-  showToast("Pedido cancelado.");
-  await cargarCliente();
+  showToast("Pedido cancelado.");await cargarCliente();
 }
-
 async function guardarPerfil(){
-  const res=await apiFetch("/auth/perfil",{method:"PUT",body:JSON.stringify({
-    nombre:    document.getElementById("pfNombre").value.trim(),
-    documento: document.getElementById("pfDoc").value.trim(),
-    telefono:  document.getElementById("pfTel").value.trim(),
-    direccion: document.getElementById("pfDir").value.trim(),
-  })});
+  const res=await apiFetch("/auth/perfil",{method:"PUT",body:JSON.stringify({nombre:document.getElementById("pfNombre").value.trim(),documento:document.getElementById("pfDoc").value.trim(),telefono:document.getElementById("pfTel").value.trim(),direccion:document.getElementById("pfDir").value.trim()})});
   if(res.error){showToast(res.error,"error");return;}
-  currentUser.nombre=document.getElementById("pfNombre").value.trim()||currentUser.nombre;
-  renderHeaderUser();showToast("Perfil actualizado ✦");
-}
-
-/* ══════════════════════════════════════
-   VISTA ADMIN — desde API
-══════════════════════════════════════ */
-async function cargarAdmin(){
-  if(!currentUser||currentUser.rol!=="admin")return;
-  const [todosLosPedidos, clientes, alertas, movimientos] = await Promise.all([
-    apiFetch("/pedidos/"),
-    apiFetch("/auth/clientes"),
-    apiFetch("/inventario/alertas"),
-    apiFetch("/inventario/")
-  ]);
-  pedidos = Array.isArray(todosLosPedidos) ? todosLosPedidos : [];
-  const clientesArr = Array.isArray(clientes) ? clientes : [];
-  const alertasArr  = Array.isArray(alertas)  ? alertas  : [];
-  const movsArr     = Array.isArray(movimientos) ? movimientos : [];
-
-  // Alerta stock crítico
-  const banner=document.getElementById("alertaBanner");
-  if(alertasArr.length){
-    banner.textContent=`⚠️ ${alertasArr.length} producto(s) con stock crítico (≤5 unidades): ${alertasArr.map(p=>p.nombre).join(", ")}`;
-    banner.classList.add("show");
-  } else {
-    banner.classList.remove("show");
-  }
-
-  // Stats
-  const total=pedidos.reduce((s,p)=>s+(p.estado!=="cancelado"?p.total:0),0);
-  const pendCount=pedidos.filter(p=>p.estado==="pendiente").length;
-  const despCount=pedidos.filter(p=>p.estado==="despachado").length;
-  const canCount=pedidos.filter(p=>p.estado==="cancelado").length;
-  document.getElementById("adminStatRow").innerHTML=`
-    <div class="stat-card"><div class="sc-icon">📦</div><div class="sc-label">PEDIDOS TOTALES</div><div class="sc-val">${pedidos.length}</div></div>
-    <div class="stat-card"><div class="sc-icon">🚚</div><div class="sc-label">POR DESPACHAR</div><div class="sc-val" style="color:var(--yellow)">${pendCount}</div></div>
-    <div class="stat-card"><div class="sc-icon">✅</div><div class="sc-label">DESPACHADOS</div><div class="sc-val" style="color:var(--green)">${despCount}</div></div>
-    <div class="stat-card"><div class="sc-icon">💰</div><div class="sc-label">VENTAS TOTALES</div><div class="sc-val" style="font-size:1.4rem">${fmt(total)}</div></div>
-    <div class="stat-card"><div class="sc-icon">✕</div><div class="sc-label">CANCELADOS</div><div class="sc-val" style="color:var(--red)">${canCount}</div></div>
-    <div class="stat-card"><div class="sc-icon">👥</div><div class="sc-label">CLIENTES</div><div class="sc-val">${clientesArr.length}</div></div>`;
-
-  // Pedidos recientes
-  const recent=pedidos.slice(0,5);
-  document.getElementById("adminRecentOrders").innerHTML=`<table class="table-admin"><tbody>${recent.map(p=>`<tr><td><strong>${(p.numero_factura||"").slice(-7)}</strong></td><td>${p.cliente_nombre||"—"}</td><td><span class="status-pill sp-${p.estado}">${p.estado}</span></td><td>${fmt(p.total)}</td></tr>`).join("")}</tbody></table>`;
-
-  // Top clientes
-  const topC=calcTopClientes(pedidos).slice(0,3);
-  document.getElementById("adminTopClientsSmall").innerHTML=topC.map((c,i)=>`<div class="top-client-card"><div class="top-rank">${i+1}</div><div class="top-client-info"><div class="tc-name">${c.nombre}</div><div class="tc-orders">${c.pedidos} pedidos</div></div><div class="top-client-total">${fmt(c.total)}</div></div>`).join("");
-
-  // Tablas por estado
-  renderTablaEstado("tbDespachar","pendiente",true);
-  renderTablaEstado("tbDespachados","despachado",false);
-  renderTablaEstado("tbCancelados","cancelado",false,true);
-
-  // Top 5 clientes
-  const top5=calcTopClientes(pedidos).slice(0,5);
-  document.getElementById("adminTopClients").innerHTML=`<div>${top5.map((c,i)=>`<div class="top-client-card"><div class="top-rank">${i+1}</div><div class="top-client-info"><div class="tc-name">${c.nombre}</div><div class="tc-orders">${c.pedidos} pedidos</div></div><div class="top-client-total">${fmt(c.total)}</div></div>`).join("")}</div>`;
-
-  // Productos
-  await renderAdminProductos();
-
-  // Inventario
-  document.getElementById("tbInventario").innerHTML=movsArr.length?movsArr.map(m=>`<tr><td><span class="status-pill ${m.tipo==="entrada"?"sp-despachado":"sp-cancelado"}">${m.tipo}</span></td><td>${m.producto_nombre||"—"}</td><td>${m.cantidad}</td><td>${m.usuario||"—"}</td><td>${fmtFecha(m.fecha)}</td></tr>`).join(""):`<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--muted)">Sin movimientos aún</td></tr>`;
-
-  // Equipo
-  document.getElementById("adminTeamGrid").innerHTML=EQUIPO.map(m=>`<div class="team-card"><div class="team-avatar">${m.inicial}</div><div class="team-name">${m.nombre}</div><div class="team-role">${m.rol}</div><span class="team-badge">${m.badge}</span></div>`).join("");
-}
-
-async function renderAdminProductos(){
-  const data=await apiFetch("/productos/");
-  const prods=Array.isArray(data)?data:[];
-  document.getElementById("adminProdList").innerHTML=prods.map(p=>`<div class="prod-edit-card"><div class="prod-edit-emoji">${p.emoji||emojiProd(p.nombre)}</div><div class="prod-edit-info"><div class="pe-name">${p.nombre}</div><div class="pe-code">${p.codigo||""} · ${p.categoria||""}</div><div class="pe-stock">Stock: <strong>${p.stock}</strong> · Precio: <strong>${fmt(p.precio)}</strong></div></div><div class="prod-edit-actions"><button class="action-btn" onclick="openEditProd('${p._id}','${p.nombre}',${p.precio},${p.stock},'${p.descripcion||""}')">✏️ Editar</button></div></div>`).join("");
-}
-
-function calcTopClientes(lista){
-  const map={};
-  lista.filter(p=>p.estado!=="cancelado").forEach(p=>{
-    const key=p.cliente_id||p.cliente_nombre;
-    if(!map[key])map[key]={nombre:p.cliente_nombre||"—",pedidos:0,total:0};
-    map[key].pedidos++;map[key].total+=p.total;
-  });
-  return Object.values(map).sort((a,b)=>b.total-a.total);
-}
-
-function renderTablaEstado(tbId,estado,acciones,motivo){
-  const lista=pedidos.filter(p=>p.estado===estado);
-  document.getElementById(tbId).innerHTML=lista.length?lista.map(p=>`<tr><td><strong>${p.numero_factura||"—"}</strong></td><td>${p.cliente_nombre||"—"}</td><td>${fmtFecha(p.fecha)}</td><td>${fmt(p.total)}</td><td>${motivo?"—":`<span class="status-pill sp-${p.estado}">${p.estado}</span>`}</td>${acciones?`<td><button class="action-btn" onclick="adminDespachar('${p._id}')">✅ Despachar</button><button class="action-btn danger" onclick="adminCancelar('${p._id}')">✕ Cancelar</button></td>`:""}</tr>`).join(""):
-  `<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted)">No hay pedidos en este estado</td></tr>`;
-}
-
-async function adminDespachar(id){
-  const res=await apiFetch(`/pedidos/${id}/estado`,{method:"PUT",body:JSON.stringify({estado:"despachado"})});
-  if(res.error){showToast(res.error,"error");return;}
-  showToast("Pedido despachado ✅");
-  await cargarAdmin();adminTab("despachar");
-}
-async function adminCancelar(id){
-  if(!confirm("¿Cancelar este pedido?"))return;
-  const res=await apiFetch(`/pedidos/${id}/estado`,{method:"PUT",body:JSON.stringify({estado:"cancelado"})});
-  if(res.error){showToast(res.error,"error");return;}
-  showToast("Pedido cancelado.");
-  await cargarAdmin();adminTab("despachar");
-}
-
-function adminTab(tab){
-  document.querySelectorAll(".admin-tab-content").forEach(el=>el.classList.remove("active"));
-  document.getElementById("at-"+tab).classList.add("active");
-  document.querySelectorAll(".admin-nav li a").forEach(a=>a.classList.remove("active"));
-  document.getElementById("an-"+tab).classList.add("active");
-  if(tab === "kanban") renderKanban();
-}
-
-function openEditProd(id,nombre,precio,stock,desc){
-  document.getElementById("epId").value=id;
-  document.getElementById("epNombre").value=nombre;
-  document.getElementById("epPrecio").value=precio;
-  document.getElementById("epStock").value=stock;
-  document.getElementById("epDesc").value=desc;
-  document.getElementById("editProdModal").classList.add("open");
-}
-function closeEditProd(){document.getElementById("editProdModal").classList.remove("open");}
-async function guardarProducto(){
-  const id=document.getElementById("epId").value;
-  const res=await apiFetch(`/productos/${id}`,{method:"PUT",body:JSON.stringify({
-    nombre:      document.getElementById("epNombre").value.trim(),
-    precio:      parseFloat(document.getElementById("epPrecio").value),
-    stock:       parseInt(document.getElementById("epStock").value),
-    descripcion: document.getElementById("epDesc").value,
-  })});
-  if(res.error){showToast(res.error,"error");return;}
-  closeEditProd();
-  await renderAdminProductos();
-  await cargarProductos();
-  showToast("Producto actualizado ✦");
-}
-  /* ══════════════════════════════════════
-   KANBAN
-══════════════════════════════════════ */
-function renderKanban(){
-  const cols = { pendiente:[], despachado:[], cancelado:[] };
-  pedidos.forEach(p => { if(cols[p.estado]) cols[p.estado].push(p); });
-
-  Object.entries(cols).forEach(([estado, lista]) => {
-    const container = document.getElementById(`cards-${estado}`);
-    if(!container) return;
-    if(!lista.length){
-      container.innerHTML=`<div class="kanban-empty">Sin pedidos</div>`;
-      return;
-    }
-    container.innerHTML = lista.map(p => {
-      const acciones = estado === "pendiente"
-        ? `<button class="action-btn" onclick="kanbanMover('${p._id}','despachado')">✅ Despachar</button>
-           <button class="action-btn danger" onclick="kanbanMover('${p._id}','cancelado')">✕ Cancelar</button>`
-        : estado === "despachado"
-        ? `<button class="action-btn danger" onclick="kanbanMover('${p._id}','cancelado')">✕ Cancelar</button>`
-        : "";
-      return `<div class="kanban-card">
-        <div class="kanban-card-num">${p.numero_factura||"—"}</div>
-        <div class="kanban-card-cliente">👤 ${p.cliente_nombre||"—"}</div>
-        <div class="kanban-card-cliente">📅 ${fmtFecha(p.fecha)}</div>
-        <div class="kanban-card-total">${fmt(p.total)}</div>
-        ${acciones ? `<div class="kanban-card-actions">${acciones}</div>` : ""}
-      </div>`;
-    }).join("");
-  });
-}
-
-async function kanbanMover(id, nuevoEstado){
-  const res = await apiFetch(`/pedidos/${id}/estado`, {
-    method:"PUT", body: JSON.stringify({estado: nuevoEstado})
-  });
-  if(res.error){showToast(res.error,"error");return;}
-  showToast(`Pedido movido a ${nuevoEstado} ✅`);
-const data = await apiFetch("/pedidos/");
-  pedidos = Array.isArray(data) ? data : [];
-  renderKanban();
-  adminTab("kanban");
-}
-
-/* ══════════════════════════════════════
-   INICIO
-══════════════════════════════════════ */
-async function init(){
-  await cargarProductos();
-  actualizarCarrito();
-  renderHeaderUser();
-  setTimeout(()=>{document.getElementById("loader").style.opacity="0";setTimeout(()=>document.getElementById("loader").style.display="none",400);},800);
-}
-
-init();
-</script>
-</body>
-</html>
+  cu
